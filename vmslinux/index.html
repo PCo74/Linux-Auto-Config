@@ -1,0 +1,147 @@
+#!/bin/bash
+
+#<meta charset="UTF-8">
+#<style>h1 {color: maroon;} pre {tab-size: 4;} </style>
+#<h1>Linux-Auto-Configuration ©PCo/2016-2021</h1>
+
+#<pre>
+set -e
+
+IDFIC="=--="
+IP="192.168.56.1"
+PORT="8000"
+
+# liste des VMs au 2021/11/17
+vms=(
+HA-LB-FO/lb1
+HA-LB-FO/lb2
+HA-LB-FO/web1
+HA-LB-FO/web2
+HA-LB-FO/web3
+heartbeat-HA-FO/web1
+heartbeat-HA-FO/web2
+)
+
+msgf() { ### génère un message formaté ###
+	style=${1:0:3} # $1 (.)
+	action=${1:3} # $1 après (.)
+	libel=${2:0} # $2
+	RAZ="\e[0m" # reset couleurs par défaut
+	echo -en $RAZ
+	case $style in
+		"(?)") echo -en "\e[93m$action";; # question
+		"(i)") echo -en "\e[44m$action$RAZ\e[92m $libel";; # information
+		"(T)") echo -en "\n\e[7m$action";; # titre
+		"(!)") echo -en "\e[103;91m$action$RAZ\e[93m $libel";; # alerte
+		*) echo -en "${1}";; # par défaut	
+	esac
+	echo -en $RAZ
+	if [ "$style" != "(?)" ]; then echo ; fi;
+}
+
+selectionner_vm() { 
+    msgf "(T)Sélectionne une VM"
+
+    PS3=$(msgf "(?)Quelle machine ? ")
+    select menu_choix in "${vms[@]}"
+    do
+        if [ "$menu_choix" != "" ]; then break; fi
+    done
+    vm=$menu_choix
+    url="http://${IP}:${PORT}/vmslinux/${vm}.txt"
+    wget -O vm.txt $url
+}
+
+recuperer_definition_vm() {
+	msgf "(T)Récupère le fichier de définition de la VM -> «vm.txt»"
+	
+	if [ "$1" = "" ]; then # pas de paramètre pour vm.txt
+		selectionner_vm
+	else
+		if [ "$1" != "vm.txt" ]; then # paramètre différent de vm.txt			
+			msgf "(i)renomme" "«$1» -> «vm.txt»"
+			mv -f $1 vm.txt
+		else
+			msgf "(i)utilise" "«vm.txt» existant !"
+		fi
+	fi
+}
+
+extraire_fichiers() {
+	msgf "(T)Extrait les fichiers de configuration du fichier «vm.txt»"
+	
+	IFS_OLD=$IFS
+	IFS=''
+	mkdir "./vm_fics"
+	IDFIC_LG=${#IDFIC}
+	nof=0
+	while read -r ligne
+	do
+		id=${ligne:0:$IDFIC_LG}
+		if [ "$id" == $IDFIC ]; then 
+			let "nof=nof+1"
+			fichier=`printf "%0*d" 2 $nof`${ligne:$IDFIC_LG}
+			fichier=${fichier////+} 
+			msgf "(i)extraction" $fichier
+			touch "./vm_fics/"$fichier
+		else
+			echo $ligne >> "./vm_fics/"$fichier
+		fi
+	done < "./vm.txt"
+	IFS=$IFS_OLD
+	mkdir "./vm_fics/faits"
+}
+
+copier_executer_fichiers() {
+	msgf "(T)Copie ou exécute les différents fichiers extraits"
+	
+	cd "./vm_fics"
+	for orig in $(ls)
+	do
+		if [ -f $orig ]; then
+			mv $orig ./faits/$orig
+			dest=""
+			carnb="${orig:0:2}"
+			car3="${orig:2:1}"
+			if [ "$car3" != '+' ] && [ "$car3" != '.' ]; then # exécuter			
+				msgf "(i)$carnb -> exécute" "${orig:2}"
+				bash ./faits/$orig
+			else # copier
+				dest=${orig//+//}
+				dest=${dest:2}
+				if [ -f "$dest" ]; then cp $dest $dest".copie"; fi;
+				msgf "(i)$carnb -> copie  " $dest
+				cp ./faits/$orig $dest
+			fi
+		fi
+	done;
+	cd ..
+}
+
+nettoyer_installation() {
+	msgf "(T)Supprime les fichiers utilisés pour l'installation"
+	
+	msg=$(msgf "(?)Supprimer les fichiers d'installation ? [O/n] ")
+	read -s -n 1 -p "$msg" rep
+	if [ "$rep" = "n" ] || [ "$rep" = "N" ]; then
+		msgf "(i)fichiers conservés"
+	else
+		if [ -f ".profile.copie" ]; then mv .profile.copie .profile; fi;
+		rm -rf vm_* vm.txt vmslinux*
+		msgf "(i)fichiers supprimés"
+	fi
+}
+
+autoconfigurer_vm() {
+	msgf "(T)Auto-configure une VM à partir «vm.txt»"
+	
+	if [ ! -f "./vm.txt" ]; then recuperer_definition_vm "$1"; fi;
+	if [ ! -d "./vm_fics" ]; then extraire_fichiers; fi;
+	copier_executer_fichiers
+	nettoyer_installation
+}
+
+export -f msgf
+autoconfigurer_vm $1		   	   
+
+#</pre>
