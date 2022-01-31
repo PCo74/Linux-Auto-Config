@@ -2,35 +2,36 @@
 <html>
   <head>
     <meta content="text/html; charset=UTF-8" http-equiv="content-type">
-    <title>HA-LB-FO/lb1</title>
-    <meta name="author" content="PCo-2016/2019">
-    <meta name="description" content="SISR">
-    <meta name="highlight" content="true">
-    <meta name="pasnumero" content="false">
-    <link rel="icon" href="http://cp.cosson.free.fr/pco-css-js/favicon.ico">
-    <link rel="stylesheet" type="text/css" href="http://cp.cosson.free.fr/pco-css-js/cours.css">
-    <script language="javascript" src="http://cp.cosson.free.fr/pco-css-js/dev_red_hx.js"></script>
-	<style>
-		i {color: mediumaquamarine;}
-		pre {tab-size: 4;-moz-tab-size: 4;}
-		b .hljs-comment {color: red;}
-	</style>
+    <title>lb1</title>
+    <meta name="author" content="PCo-2016/2022">
+    <meta name="description" content="linux, VM">
+    <style>
+        
+        body { font-family: system-ui; }
+        img { border: 1px silver solid; padding: 10px; }
+        em { border-radius: .3em; padding: .0em .2em; background-color: lightblue; }
+        strong { color: red; }
+        pre { background-color: lemonchiffon; color: navy; border-radius: .3em; padding: .2em; }      
+        details > summary { padding: 4px; background-color: #eee; border: none;
+            box-shadow: 1px 1px 2px #bbb; cursor: pointer; margin-top: 0.5em; }
+
+    </style>
   </head>
   <body>
-      
-        <p>
-          <img class="fixe" src="HA-LB-FO.png" alt="schéma HA-LB-FO">
-        </p>
+    <h1>[ HA-LB-FO ] :: lb1</h1>
+    <p><img src="HA-LB-FO.png" alt="schema"></p>
+    
+    
+        <details>
+            <summary><em>nano</em> /etc/hostname</summary>
+            <pre>
+lb1</pre>
+        </details>
 
-
-    <h1><i>$ nano</i> /etc/hostname</h1>
-
-    <pre><code class="bash">lb1
-</code></pre>
-
-    <h1><i>$ nano</i> /etc/hosts</h1>
-
-    <pre><code class="bash">127.0.0.1	localhost
+        <details>
+            <summary><em>nano</em> /etc/hosts</summary>
+            <pre>
+127.0.0.1	localhost
 127.0.1.1	lb1
 192.168.56.11	lb1
 192.168.56.12	lb2
@@ -41,69 +42,77 @@
 # The following lines are desirable for IPv6 capable hosts
 ::1     localhost ip6-localhost ip6-loopback
 ff02::1 ip6-allnodes
-ff02::2 ip6-allrouters
-</code></pre>
+ff02::2 ip6-allrouters</pre>
+        </details>
 
-    <h1><i>$ bash</i> install_ipvsadm_heartbeat.sh</h1>
-
-    <pre><code class="bash">#!/bin/sh
+        <details>
+            <summary><em>cmd bash</em> install_ipvsadm_heartbeat.sh</summary>
+            <pre>
+#!/bin/sh
 apt update
 apt -y install ipvsadm
 apt -y install heartbeat
 # activation routage
-sed -i &#x27;s/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/&#x27; /etc/sysctl.conf
-	</code></pre>
+sed -i &#x27;s/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/&#x27; /etc/sysctl.conf</pre>
+        </details>
 
-    <h1><i>$ nano</i> /etc/ipvsadm.rules</h1>
-
-    <pre><code class="bash">ipvsadm -A -t 192.168.56.10:80 -s rr
+        <details>
+            <summary><em>nano</em> /etc/ipvsadm.rules</summary>
+            <pre>
+ipvsadm -A -t 192.168.56.10:80 -s rr
 ipvsadm -a -t 192.168.56.10:80 -r 192.168.200.11:80 -m
 ipvsadm -a -t 192.168.56.10:80 -r 192.168.200.12:80 -m
-ipvsadm -a -t 192.168.56.10:80 -r 192.168.200.13:80 -m
-</code></pre>
+ipvsadm -a -t 192.168.56.10:80 -r 192.168.200.13:80 -m</pre>
+        </details>
 
-    <h1><i>$ nano</i> /etc/default/ipvsadm</h1>
-
-    <pre><code class="bash"># ipvsadm
+        <details>
+            <summary><em>nano</em> /etc/default/ipvsadm</summary>
+            <pre>
+# ipvsadm
 # if you want to start ipvsadm on boot set this to true
 AUTO=&quot;true&quot;
 # daemon method (none|master|backup)
 DAEMON=&quot;master&quot;
 # use interface (eth0,eth1...)
-IFACE=&quot;enp0s3&quot;	
-</code></pre>
+IFACE=&quot;enp0s3&quot;</pre>
+        </details>
 
-    <h1><i>$ nano</i> /etc/ha.d/ha.cf</h1>
-
-    <pre><code class="bash">bcast enp0s3
+        <details>
+            <summary><em>nano</em> /etc/ha.d/ha.cf</summary>
+            <pre>
+bcast enp0s3
 deadtime 5
 keepalive 1
-node lb1 lb2
-</code></pre>
+node lb1 lb2</pre>
+        </details>
 
-    <h1><i>$ nano</i> /etc/ha.d/haresources</h1>
-
-    <pre><code class="bash">#adresses virtuelles (et flottantes)
+        <details>
+            <summary><em>nano</em> /etc/ha.d/haresources</summary>
+            <pre>
+#adresses virtuelles (et flottantes)
 lb1	IPaddr::192.168.56.10	ipvsadm
 #lb1	IPaddr::192.168.200.254	ipvsadm
-lb1	IPaddr::192.168.200.254
-</code></pre>
+lb1	IPaddr::192.168.200.254</pre>
+        </details>
 
-    <h1><i>$ nano</i> /etc/ha.d/authkeys</h1>
+        <details>
+            <summary><em>nano</em> /etc/ha.d/authkeys</summary>
+            <pre>
+auth 1
+1 md5 motdepasse</pre>
+        </details>
 
-    <pre><code class="bash">auth 1
-1 md5 motdepasse
-</code></pre>
+        <details>
+            <summary><em>cmd bash</em> chmod_authkeys.sh</summary>
+            <pre>
+#!/bin/sh
+chmod 600 /etc/ha.d/authkeys</pre>
+        </details>
 
-    <h1><i>$ bash</i> chmod_authkeys.sh</h1>
-
-    <pre><code class="bash">#!/bin/sh
-chmod 600 /etc/ha.d/authkeys
-</code></pre>
-
-    <h1><i>$ nano</i> /etc/network/interfaces</h1>
-
-    <pre><code class="bash"># localhost
+        <details>
+            <summary><em>nano</em> /etc/network/interfaces</summary>
+            <pre>
+# localhost
 auto lo
 iface lo inet loopback
 
@@ -117,26 +126,17 @@ allow-hotplug enp0s8
 iface enp0s8 inet static
 	address 192.168.200.251/24
 
-# <b><strong>✋</strong> valider la configuration "Réseau" sous VirtualBox, puis redémarrer…</b>
-</code></pre>
+# <strong>✋  valider la configuration &quot;Réseau&quot; sous VirtualBox, puis redémarrer…</strong></pre>
+        </details>
 
-    <h1><i>$ bash</i> ipvsadm_reconfig.sh</h1>
-
-    <pre><code class="bash">#!/bin/sh
+        <details>
+            <summary><em>cmd bash</em> ipvsadm_reconfig.sh</summary>
+            <pre>
+#!/bin/sh
 dpkg-reconfigure ipvsadm
 systemctl restart ipvsadm.service
-systemctl status ipvsadm.service
-</code></pre>
+systemctl status ipvsadm.service</pre>
+        </details>
 
-    <h1><i>$ nano</i> /root/test-algo-wrr.sh</h1>
-
-    <pre><code class="bash">echo ******************************************
-echo pondérer serveur avec Weighted Round Robin
-echo ******************************************
-echo changer algo
-ipvsadm -E -t 192.168.56.10:80 -s wrr
-echo rendre un nœud un peu plus lourd
-ipvsadm -e -t 192.168.56.10:80 -r 192.168.200.11 -m -w 3</code></pre>
-
-    </body>
+  </body>
 </html>

@@ -27,7 +27,7 @@ apt -y install ipvsadm
 apt -y install heartbeat
 # activation routage
 sed -i 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/' /etc/sysctl.conf
-	
+
 =--=/etc/ipvsadm.rules
 ipvsadm -A -t 192.168.56.10:80 -s rr
 ipvsadm -a -t 192.168.56.10:80 -r 192.168.200.11:80 -m

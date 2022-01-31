@@ -2,169 +2,159 @@
 # -*- coding: utf-8 -*-
 
 """
-génère vue des vmslinux
-©PCo-2017
+generates a view of VMs in HTML format
+©PCo-2017/2022
 """
 
 import glob
-import sys
-import os
-from os.path import basename
-import re
 import html
+import os
+import re
+import sys
 import webbrowser
+from enum import Enum
 
+from lib.vm_filename import VmFilename
+from lib.init_file import InitFile
 
 FIC_CONFIG = "../config.ini"
 
-def load_properties(filepath, sep='=', comment_char='#'):
-    """
-    Read the file passed as parameter as a properties file.
-    REF : https://stackoverflow.com/questions/3595363/properties-file-in-python-similar-to-java-properties
-    """
-    props = {}
-    with open(filepath, "rt") as f:
-        for line in f:
-            l = line.strip()
-            if l and not l.startswith(comment_char):
-                key_value = l.split(sep)
-                key = key_value[0].strip()
-                value = sep.join(key_value[1:]).strip().strip('"')
-                props[key] = value
-    return props
+HTML_SCHEMA = """<p><img src="{0}" alt="schema"></p>"""
 
+HTML_ATTENTION = """# <strong>✋ {0}</strong>"""
 
-IDFIC = load_properties(FIC_CONFIG)['IDFIC']
+HTML_DETAILS = """
+        <details>
+            <summary><em>{0}</em> {1}</summary>
+            <pre>\n{2}</pre>
+        </details>
+"""
 
+HTML_CSS = """
+        body { font-family: system-ui; }
+        img { border: 1px silver solid; padding: 10px; }
+        em { border-radius: .3em; padding: .0em .2em; background-color: lightblue; }
+        strong { color: red; }
+        pre { background-color: wheat; color: navy; border-radius: .3em; padding: .2em; overflow: auto; }      
+        details > summary { padding: 4px; background-color: #eee; border: none;
+            box-shadow: 1px 1px 2px #bbb; cursor: pointer; margin-top: 0.5em; }
+"""
 
-def debut(unNomVM):
-    global schema
-    img_schema = ""
-    if schema:
-        img_schema = """
-        <p>
-          <img class="fixe" src="{0}.png" alt="schéma {0}">
-        </p>""".format(schema)
-    
-    return """<!DOCTYPE html>
+HTML_TEMPLATE = """<!DOCTYPE html>
 <html>
   <head>
     <meta content="text/html; charset=UTF-8" http-equiv="content-type">
     <title>{0}</title>
-    <meta name="author" content="PCo-2016/2019">
-    <meta name="description" content="SISR">
-    <meta name="highlight" content="true">
-    <meta name="pasnumero" content="false">
-    <link rel="icon" href="http://cp.cosson.free.fr/pco-css-js/favicon.ico">
-    <link rel="stylesheet" type="text/css" href="http://cp.cosson.free.fr/pco-css-js/cours.css">
-    <script language="javascript" src="http://cp.cosson.free.fr/pco-css-js/dev_red_hx.js"></script>
+    <meta name="author" content="PCo-2016/2022">
+    <meta name="description" content="linux, VM">
     <style>
-      i {{color: mediumaquamarine;}}
-      pre {{tab-size: 4;-moz-tab-size: 4;}}
-      b .hljs-comment {{color: red;}}
+        {1}
     </style>
   </head>
   <body>
-      {1}
-""".format(unNomVM, img_schema)       
-
-
-def titreFichier(unType, unNom):
-    return """
-
-    <h1><i>{0}</i> {1}</h1>
-
-    <pre><code class="bash">""".format(unType, unNom)
-
-
-def finCode():
-    return """</code></pre>"""
-
-
-def fin():
-    return """
-
-    </body>
-</html>"""    
-
-
-def attention(uneLigne):
-    return """# <b><strong>✋</strong>{0}</b>""".format(uneLigne)
-
-
-def genererHTML(unFic):
-    global fic_exceptions
-    IDFIC_LG=len(IDFIC)
-    sortie = False
-    titre_fichier = "?"
-    with open(unFic + '.html', 'w', -1, "utf-8") as fh:
-        fh.write(debut(unFic))
-        with open(unFic + '.txt', 'r', -1, "utf-8") as ft: 
-            for ligne in ft:
-                ligne = ligne.rstrip('\n\r')
-                if ligne[:IDFIC_LG] == IDFIC:  # repère nom fichier
-                    if sortie :
-                        fh.write(finCode())    
-                    sortie = estAffiche(ligne[IDFIC_LG:]) # afficher ou non !           
-                    nom = ligne[IDFIC_LG:].split()[0]
-                    if ligne[IDFIC_LG] == "/" or ligne[IDFIC_LG] == ".":
-                        titre_fichier = titreFichier("$ nano", nom)
-                    else:
-                        titre_fichier = titreFichier("$ bash", nom)
-                else:
-                    if sortie :
-                        if ligne[0:5] != "# !!!" :
-                            ligne = html.escape(ligne).replace(chr(27), '␛')
-                        else:
-                            ligne = attention(ligne[5:])
-                        if titre_fichier != "":
-                            fh.write(titre_fichier + ligne)
-                            #print(titre_fichier + ligne)
-                            titre_fichier = ""
-                        else:                     
-                            fh.write("\n" + ligne)
-                            #print("\n" + ligne)
-            if sortie:
-                fh.write(finCode())
-            fh.write(fin())
-
-def estAffiche(unFic):
-    """ détermine si le fichier <unFic> est à afficher
-        -> str unFic    un nom de fichier
-        <- bool {True|False}
-    """
-    fic_exceptions = ( r"/etc/issue", r"_(.*)$" )
-    for expreg in fic_exceptions:
-        if re.match(expreg, unFic):
-            return False
-    return True
-
-## MAIN
-
-
-if len(sys.argv) < 2:  # fin du script
-    sys.exit("""Argument manquant !
-Syntaxe : 01-vmslinux-vue-html.py {répertoire|fichier .txt}""")
+    <h1>[ {2} ] :: {0}</h1>
+    {4}
     
-reffic = os.path.basename(sys.argv[1])
-schema = None
+    {3}
+  </body>
+</html>
+"""
 
-if os.path.isfile(reffic):
-    chemin = reffic
+
+
+
+
+class Block:
+    """
+    block representing either a configuration file or commands to execute
+    """
+
+    class BlockType(Enum):
+        FILE_CONFIG = "nano"
+        BASH_CMD = "cmd bash"
+
+    def __init__(self, name):
+        self.name = name
+        self._lines = []
+        if name[0] == "/" or name[0] == ".":
+            self.type = Block.BlockType.FILE_CONFIG
+        else:
+            self.type = Block.BlockType.BASH_CMD
+
+    def add_line(self, line):
+        line = html.escape(line).replace(chr(27), '␛')
+        if line[0:5] == "# !!!":
+            line = HTML_ATTENTION.format(line[5:])
+        self._lines.append(line)
+
+    def is_viewed(self):
+        block_exceptions = (r"/etc/issue", r"_(.*)$")
+        for be in block_exceptions:
+            if re.match(be, self.name):
+                return False
+        return True
+
+    def get_content(self):
+        return "\n".join(self._lines)
+
+
+class VM:
+    """
+    definition of a Virtual Machine
+    """
+
+    FILE_CONFIG = "../config.ini"
+
+    def __init__(self, filename, id_file):
+        self.filename = filename
+        self.id_file = id_file
+        self.blocks = []
+        # self.file_path, self.vm_name, self.file_html, self.url, self.file_group = self.set_file_vars()
+        self.vf = VmFilename(filename)
+
+    def extract_blocks(self):
+        id_file_lg = len(self.id_file)
+        block = None
+        with open(self.filename, 'r', -1, "utf-8") as ft:
+            for line in ft:
+                line = line.rstrip('\n\r')
+                if line[:id_file_lg] == self.id_file:  # mark block name
+                    if block is not None:  # not first block
+                        self.blocks.append(block)
+                    block = Block(line[id_file_lg:].split()[0])
+                else:
+                    block.add_line(line)
+
+    def generate_html(self):
+        details = ""
+        for blk in vm.blocks:
+            if blk.is_viewed():
+                details += HTML_DETAILS.format(blk.type.value, blk.name, blk.get_content().strip())
+
+        img = HTML_SCHEMA.format(vm.vf.schema) if self.vf.schema else ""
+        with open(self.vf.html, 'w', -1, "utf-8") as fh:
+            fh.write(HTML_TEMPLATE.format(
+                self.vf.name, HTML_CSS, self.vf.last_dir, details, img))
+
+
+# main #################################################################################################################
+
+if len(sys.argv) < 2:
+    sys.exit("""Argument manquant !
+Syntaxe : _vmslinux-vue-html.py {<répertoire>|<fichier>.txt}""")
+
+init_file = InitFile(VM.FILE_CONFIG)
+
+source = os.path.basename(sys.argv[1])
+if os.path.isdir(source):
+    source = source + os.path.sep + "*.txt"
+
+glob_source = glob.glob(source)
+if glob_source:
+    for fic in glob.glob(source):
+        vm = VM(fic, init_file.props['IDFIC'])
+        vm.extract_blocks()
+        vm.generate_html()
+        webbrowser.open(vm.vf.url, new=2)
 else:
-    chemin = reffic + "/*.txt"
-    if os.path.isfile(reffic + "/" + reffic + ".png"):
-        schema = reffic
-
-print(chemin, schema)
-
-for fic in glob.glob("./" + chemin):
-    fic = fic.replace("\\", "/")[2:]
-    print(os.path.splitext(fic))
-    print(os.path.splitext(fic)[0])
-    genererHTML(os.path.splitext(fic)[0])
-    path = os.path.abspath(__file__)
-    path = os.path.dirname(path) + "/"
-    url = "file://" + path + os.path.splitext(fic)[0] + ".html"
-    print(url)
-    webbrowser.open(url, new=2)
+    print(source, " -> aucun fichier de VMs !!!")

@@ -2,54 +2,57 @@
 <html>
   <head>
     <meta content="text/html; charset=UTF-8" http-equiv="content-type">
-    <title>HA-LB-FO/web3</title>
-    <meta name="author" content="PCo-2016/2019">
-    <meta name="description" content="SISR">
-    <meta name="highlight" content="true">
-    <meta name="pasnumero" content="false">
-    <link rel="icon" href="http://cp.cosson.free.fr/pco-css-js/favicon.ico">
-    <link rel="stylesheet" type="text/css" href="http://cp.cosson.free.fr/pco-css-js/cours.css">
-    <script language="javascript" src="http://cp.cosson.free.fr/pco-css-js/dev_red_hx.js"></script>
-	<style>
-		i {color: mediumaquamarine;}
-		pre {tab-size: 4;-moz-tab-size: 4;}
-		b .hljs-comment {color: red;}
-	</style>
+    <title>web3</title>
+    <meta name="author" content="PCo-2016/2022">
+    <meta name="description" content="linux, VM">
+    <style>
+        
+        body { font-family: system-ui; }
+        img { border: 1px silver solid; padding: 10px; }
+        em { border-radius: .3em; padding: .0em .2em; background-color: lightblue; }
+        strong { color: red; }
+        pre { background-color: lemonchiffon; color: navy; border-radius: .3em; padding: .2em; }      
+        details > summary { padding: 4px; background-color: #eee; border: none;
+            box-shadow: 1px 1px 2px #bbb; cursor: pointer; margin-top: 0.5em; }
+
+    </style>
   </head>
   <body>
-      
-        <p>
-          <img class="fixe" src="HA-LB-FO.png" alt="schéma HA-LB-FO">
-        </p>
+    <h1>[ HA-LB-FO ] :: web3</h1>
+    <p><img src="HA-LB-FO.png" alt="schema"></p>
+    
+    
+        <details>
+            <summary><em>nano</em> /etc/hostname</summary>
+            <pre>
+web3</pre>
+        </details>
 
-
-    <h1><i>$ nano</i> /etc/hostname</h1>
-
-    <pre><code class="bash">web3
-</code></pre>
-
-    <h1><i>$ nano</i> /etc/hosts</h1>
-
-    <pre><code class="bash">127.0.0.1	localhost
+        <details>
+            <summary><em>nano</em> /etc/hosts</summary>
+            <pre>
+127.0.0.1	localhost
 127.0.1.1	web3 web3.labosio.local
 
 # The following lines are desirable for IPv6 capable hosts
 ::1     localhost ip6-localhost ip6-loopback
 ff02::1 ip6-allnodes
-ff02::2 ip6-allrouters
-</code></pre>
+ff02::2 ip6-allrouters</pre>
+        </details>
 
-    <h1><i>$ bash</i> install_apache.sh</h1>
-
-    <pre><code class="bash">#!/bin/sh
+        <details>
+            <summary><em>cmd bash</em> install_apache.sh</summary>
+            <pre>
+#!/bin/sh
 apt update
 apt -y install apache2
-sed -i &#x27;s/Apache2 Debian Default Page/WEB3/&#x27; /var/www/html/index.html
-</code></pre>
+sed -i &#x27;s/Apache2 Debian Default Page/WEB3/&#x27; /var/www/html/index.html</pre>
+        </details>
 
-    <h1><i>$ nano</i> /etc/network/interfaces</h1>
-
-    <pre><code class="bash"># localhost
+        <details>
+            <summary><em>nano</em> /etc/network/interfaces</summary>
+            <pre>
+# localhost
 auto lo
 iface lo inet loopback
 
@@ -59,8 +62,8 @@ iface enp0s3 inet static
 	address 192.168.200.13/24
 	gateway 192.168.200.254
 	
-# <b><strong>✋</strong> valider la configuration "Réseau" sous VirtualBox, puis redémarrer…</b>
-</code></pre>
+# <strong>✋  valider la configuration &quot;Réseau&quot; sous VirtualBox, puis redémarrer…</strong></pre>
+        </details>
 
-    </body>
+  </body>
 </html>
