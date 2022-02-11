@@ -32,7 +32,8 @@ HTML_DETAILS = """
 
 HTML_CSS = """
         body { font-family: system-ui; }
-        img { border: 1px silver solid; padding: 10px; }
+        h1 > em { color: navy; font-style: normal;  }
+        img { border: 1px silver solid; padding: 10px; border-radius: 15px; }
         em { border-radius: .3em; padding: .0em .2em; background-color: lightblue; }
         strong { color: red; }
         pre { background-color: wheat; color: navy; border-radius: .3em; padding: .2em; overflow: auto; }      
@@ -52,16 +53,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     </style>
   </head>
   <body>
-    <h1>[ {2} ] :: {0}</h1>
+    <h1><em>[ {2} ] :: {0}</em></h1>
     {4}
     
     {3}
   </body>
 </html>
 """
-
-
-
 
 
 class Block:
@@ -109,7 +107,6 @@ class VM:
         self.filename = filename
         self.id_file = id_file
         self.blocks = []
-        # self.file_path, self.vm_name, self.file_html, self.url, self.file_group = self.set_file_vars()
         self.vf = VmFilename(filename)
 
     def extract_blocks(self):
@@ -157,4 +154,4 @@ if glob_source:
         vm.generate_html()
         webbrowser.open(vm.vf.url, new=2)
 else:
-    print(source, " -> aucun fichier de VMs !!!")
+    print(source, " -> aucun fichier de VMs trouvé !!!")
