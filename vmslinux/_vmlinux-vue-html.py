@@ -121,6 +121,8 @@ class VM:
                     block = Block(line[id_file_lg:].split()[0])
                 else:
                     block.add_line(line)
+        if block is not None:
+            self.blocks.append(block)
 
     def generate_html(self):
         details = ""

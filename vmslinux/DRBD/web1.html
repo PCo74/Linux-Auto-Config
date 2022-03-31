@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta content="text/html; charset=UTF-8" http-equiv="content-type">
+    <title>web1</title>
+    <meta name="author" content="PCo-2016/2022">
+    <meta name="description" content="linux, VM">
+    <style>
+        
+        body { font-family: system-ui; }
+        h1 > em { color: navy; font-style: normal;  }
+        img { border: 1px silver solid; padding: 10px; border-radius: 15px; }
+        em { border-radius: .3em; padding: .0em .2em; background-color: lightblue; }
+        strong { color: red; }
+        pre { background-color: wheat; color: navy; border-radius: .3em; padding: .2em; overflow: auto; }      
+        details > summary { padding: 4px; background-color: #eee; border: none;
+            box-shadow: 1px 1px 2px #bbb; cursor: pointer; margin-top: 0.5em; }
+
+    </style>
+  </head>
+  <body>
+    <h1><em>[ DRBD ] :: web1</em></h1>
+    
+    
+    
+        <details>
+            <summary><em>nano</em> /etc/hostname</summary>
+            <pre>
+web1</pre>
+        </details>
+
+        <details>
+            <summary><em>nano</em> /etc/hosts</summary>
+            <pre>
+127.0.0.1	localhost
+127.0.1.1	web1
+192.168.56.12	web2
+
+# The following lines are desirable for IPv6 capable hosts
+::1     localhost ip6-localhost ip6-loopback
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters</pre>
+        </details>
+
+        <details>
+            <summary><em>nano</em> /etc/network/interfaces</summary>
+            <pre>
+# This file describes the network interfaces available on your system
+# and how to activate them. For more information, see interfaces(5).
+
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# privé hôte 192.168.56.0/24
+allow-hotplug enp0s3
+iface enp0s3 inet static
+	address 192.168.56.11/24
+	gateway 192.168.56.254
+
+# <strong>✋  modifier/ajouter les cartes &#x27;Réseau&#x27; sous VirtualBox, puis redémarrer…</strong></pre>
+        </details>
+
+        <details>
+            <summary><em>nano</em> ./faits/sdb.sfdisk</summary>
+            <pre>
+# <strong>✋  uniquement pour automatiser -&gt; cf. commande &#x27;cfdisk&#x27;</strong>
+label: dos
+label-id: 0x0566400f
+device: /dev/sdb
+unit: sectors
+
+/dev/sdb1 : start=        2048, type=83</pre>
+        </details>
+
+        <details>
+            <summary><em>cmd bash</em> format_sdb</summary>
+            <pre>
+# <strong>✋  uniquement pour automatiser -&gt; cf. commande &#x27;cfdisk&#x27;</strong>
+sfdisk /dev/sdb &lt; faits/sdb.sfdisk</pre>
+        </details>
+
+        <details>
+            <summary><em>cmd bash</em> install_apache.sh</summary>
+            <pre>
+apt update
+apt install -y apache2
+apt install -y drbd-utils
+apt install -y ocfs2-tools
+sed -i &#x27;s/O2CB_ENABLED=false/O2CB_ENABLED=true/&#x27; /etc/default/o2cb</pre>
+        </details>
+
+        <details>
+            <summary><em>nano</em> /etc/drbd.conf</summary>
+            <pre>
+resource r0 {
+    device /dev/drbd0;
+    disk /dev/sdb1;
+    meta-disk internal;
+    protocol    C;
+    net { 
+		allow-two-primaries;
+		after-sb-0pri discard-zero-changes;
+		after-sb-1pri discard-secondary;
+		after-sb-2pri disconnect;
+	}
+    syncer      { rate 1000M; }
+    startup     { become-primary-on both; }
+    on web1     { address 192.168.56.11:7788; }
+    on web2     { address 192.168.56.12:7788; }
+}</pre>
+        </details>
+
+        <details>
+            <summary><em>nano</em> /etc/ocfs2/cluster.conf</summary>
+            <pre>
+cluster:
+	node_count = 2
+	name = ocfs2
+
+node:
+	ip_port = 7777
+	ip_address = 192.168.56.11
+	number = 1
+	name = web1
+	cluster = ocfs2
+
+node:
+	ip_port = 7777
+	ip_address = 192.168.56.12
+	number = 2
+	name = web2
+	cluster = ocfs2</pre>
+        </details>
+
+        <details>
+            <summary><em>cmd bash</em> config_drbd</summary>
+            <pre>
+modprobe drbd
+drbdadm create-md r0 
+drbdadm up r0
+
+echo &quot;
+Commandes à saisir dans l&#x27;ordre (cf. web2)
+1) drbdadm -- --overwrite-data-of-peer primary r0 /* init */
+2) watch -d -n 5 cat /proc/drbd /* &lt;CTRL&gt;+C quand la synchro est terminée ! */
+7) mount.ocfs2 /dev/drbd0 /var/www/ /* montage */
+8) mkdir /var/www/html
+9) echo &#x27;&lt;h1&gt;test synchro&lt;/h1&gt;&#x27; &gt; /var/www/html/
+[!] reste à vérifier dans le navigateur http://192.168.56.11 et http://192.168.56.12 ...
+
+REMARQUE après &#x27;reboot&#x27; :
+- systemctl start drbd.service
+- mount.ocfs2 /dev/drbd0 /var/www/
+&quot;
+break</pre>
+        </details>
+
+  </body>
+</html>

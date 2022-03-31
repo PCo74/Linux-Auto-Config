@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta content="text/html; charset=UTF-8" http-equiv="content-type">
+    <title>web2</title>
+    <meta name="author" content="PCo-2016/2022">
+    <meta name="description" content="linux, VM">
+    <style>
+        
+        body { font-family: system-ui; }
+        h1 > em { color: navy; font-style: normal;  }
+        img { border: 1px silver solid; padding: 10px; border-radius: 15px; }
+        em { border-radius: .3em; padding: .0em .2em; background-color: lightblue; }
+        strong { color: red; }
+        pre { background-color: wheat; color: navy; border-radius: .3em; padding: .2em; overflow: auto; }      
+        details > summary { padding: 4px; background-color: #eee; border: none;
+            box-shadow: 1px 1px 2px #bbb; cursor: pointer; margin-top: 0.5em; }
+
+    </style>
+  </head>
+  <body>
+    <h1><em>[ heartbeat-HA-FO ] :: web2</em></h1>
+    <p><img src="heartbeat-HA-FO.png" alt="schema"></p>
+    
+    
+        <details>
+            <summary><em>nano</em> /etc/hostname</summary>
+            <pre>
+web2</pre>
+        </details>
+
+        <details>
+            <summary><em>nano</em> /etc/hosts</summary>
+            <pre>
+127.0.0.1		localhost
+127.0.1.1		web2
+192.168.56.11	web1
+
+# The following lines are desirable for IPv6 capable hosts
+::1     localhost ip6-localhost ip6-loopback
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters</pre>
+        </details>
+
+        <details>
+            <summary><em>nano</em> /etc/network/interfaces</summary>
+            <pre>
+# This file describes the network interfaces available on your system
+# and how to activate them. For more information, see interfaces(5).
+
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# privé hôte 192.168.56.0/24
+auto enp0s3
+iface enp0s3 inet static
+	address 192.168.56.12/24
+	gateway 192.168.56.254
+	
+# <strong>✋  valider la configuration &quot;Réseau&quot; sous VirtualBox, puis redémarrer…</strong></pre>
+        </details>
+
+        <details>
+            <summary><em>cmd bash</em> install_paquets_apache_heartbeat</summary>
+            <pre>
+apt update
+apt install -y apache2
+apt install -y heartbeat</pre>
+        </details>
+
+        <details>
+            <summary><em>nano</em> /etc/ha.d/ha.cf</summary>
+            <pre>
+bcast enp0s3
+deadtime 5
+keepalive 1
+node web1 web2
+auto_failback on</pre>
+        </details>
+
+        <details>
+            <summary><em>nano</em> /etc/ha.d/haresources</summary>
+            <pre>
+web1	IPaddr::192.168.56.10	apache2</pre>
+        </details>
+
+        <details>
+            <summary><em>nano</em> /etc/ha.d/authkeys</summary>
+            <pre>
+auth 1
+1 md5 motdepasse</pre>
+        </details>
+
+  </body>
+</html>
